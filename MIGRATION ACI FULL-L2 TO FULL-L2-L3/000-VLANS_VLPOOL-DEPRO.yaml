@@ -1,0 +1,73 @@
+---
+#==============================================================================================
+# Global Configuration
+#==============================================================================================
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply VLAN from VLPool Deletion
+       private:                         no
+
+  tasks:
+    - name:				Set Desired state, status and or specfiles
+      set_fact:
+        #desired_state:                 present
+        desired_state:                  absent
+        #desired_status:                modified,created
+        #desired_status:                deleted
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/000-GLOBAL-INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs: no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 000 DELETE VLAN FROM EXISTING VLPOOL
+  tags:                                 pre-snapshot
+
+- name:                                 DELETE P2P VLAN FROM LEGACY VLAN
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS VLAN POOL
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             DELETE VLAN FROM LEGACY VLAN POOL
+      aci_vlan_pool_encap_block:
+          <<:                           *apic_info
+          block_start:                  "{{ item.vlan_start }}"
+          block_end:                    "{{ item.vlan_end }}"
+          annotation:                   "orchestrator:ansible"
+          description:                  "Deleted by Ansible -- 000"
+          block_name:                   "{{ item.blockname }}"
+          pool_allocation_mode:         "static"
+          state:                        "{{ desired_state }}"
+          pool:                         "ExternalVlPool"
+      with_items:
+        - "{{ vlan }}"
+  tags:
+    - vlanpool
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 000 DELETE VLAN FROM EXISTING VLPOOL
+  tags:                                 post-snapshot

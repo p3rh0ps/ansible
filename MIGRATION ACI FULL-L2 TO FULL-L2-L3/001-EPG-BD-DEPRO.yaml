@@ -1,0 +1,90 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply EPG/BD Deletion
+       private:                         no
+
+  tasks:
+    - name:				Set Desired state, status and or specfiles
+      set_fact:
+        #desired_state:                 present
+        desired_state:                  absent
+        #desired_status:                modified,created
+        #desired_status:                deleted
+        #desired_scope:                 private
+        #desired_scope:                 public
+        #desired_scope:                 shared
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/001_EPG_BD_DEPRO-{{ vrfrun }}.yaml
+
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 001 DELETE EPG/BD ASSOCIATED WITH P2P INTF FOR L3OUT
+  tags:                                 pre-snapshot
+  
+- name:                                 DELETE END POINT GROUPS FOR VRF
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS EPG/BD
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             CLEANUP OBSOLETE EPGs
+      aci_epg:
+          <<:                           *apic_info
+          tenant:                       "{{ item.tenant}}"
+          bd:                           "{{ item.bd }}"
+          ap:                           "{{ item.appprofile }}"
+          epg:                          "{{ item.epg }}"
+          state:                        "{{ desired_state }}"
+          description:                  "Deleted by Ansible Op 001"
+      with_items:
+        - "{{ epg }}"
+  tags:
+    - epgs
+
+- name:                                 DELETE BRIDGE DOMAINS VRF
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  tasks:
+    - name:                             CLEANUP OBSOLETE BDs
+      aci_bd:
+          <<:                           *apic_info
+          tenant:                       "{{ item.tenant }}"
+          vrf:                          "{{ item.vrf }}"
+          bd:                           "{{ item.bd }}"
+          state:                        "{{ desired_state }}"
+          description:                  "Deleted by Ansible Op 001"
+      with_items:
+        - "{{ bd }}"
+  tags:
+    - bridge-domains
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 001 DELETE EPG/BD ASSOCIATED WITH P2P INTF FOR L3OUT
+  tags:                                 post-snapshot
+

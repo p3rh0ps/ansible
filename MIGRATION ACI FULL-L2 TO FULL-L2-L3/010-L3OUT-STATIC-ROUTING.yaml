@@ -1,0 +1,76 @@
+---
+- name:                   Define global settings
+  hosts:                  localhost
+  connection:             local
+  gather_facts:           no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply Static Routing on specific nodes
+       private:                         no
+
+  tasks:
+    - name:                             
+      set_fact:
+        desired_state:                  present
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/010-L3OUT_STATIC-ROUTING_INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 010 L3OUT STATIC ROUTING APPLICATION
+  tags:                                 snapshot
+
+- name:                                 STATIC ROUTING
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS STATIC ROUTING
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             STATIC ROUTING CREATION 010
+      aci_rest: 
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/rsnodeL3OutAtt-[topology/pod-{{ item.pod_id }}/node-{{ item.node_id }}]/rt-[{{ item.prefix }}].json'
+          content:
+            ipRouteP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/rsnodeL3OutAtt-[topology/pod-{{ item.pod_id }}/node-{{ item.node_id }}]/rt-[{{ item.prefix }}]'
+                ip: '{{ item.prefix }}'
+                rn: 'rt-[{{ item.prefix }}]'
+                status: ''
+              children:
+              - ipNexthopP:
+                  attributes:
+                    annotation: 'orchestrator:ansible'
+                    nhAddr: '{{ item.nhAddress }}'
+                    status: ''
+      with_items:
+        - "{{ staticroutes }}"
+
+  tags:
+    - staticroutes
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 008 L3OUT EXTERNAL EPG CREATION
+  tags:                                 snapshot

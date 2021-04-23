@@ -1,0 +1,14 @@
+#==============================================================================================
+# APIC access information.
+#==============================================================================================
+    apic_info:          &apic_info
+      host:             sandboxapicdc.cisco.com
+      username:         automation
+      private_key:      /home/youruser/projecthome/keys/automation.key
+      certificate_name: Automation
+      validate_certs:   no
+
+    rest_info:          &rest_info
+      use_proxy:        no
+      path:             /api/mo/.json
+      method:           post

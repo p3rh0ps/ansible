@@ -1,0 +1,217 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  tasks:
+    - name:
+      set_fact:
+        desired_state:                  present
+        #desired_state:                 absent
+        #desired_status:                modified,created
+        #desired_status:                deleted
+        #desired_scope:                 private
+        #desired_scope:                 public
+        #desired_scope:                 shared
+
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+  tags:                                 always
+
+- name:                                 INIT LAB PROCESS
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars:
+    vlanlist: ["737","26","27","110","423","28","29","107","418","22","23","448","109","104","135","34","447","7","77","103","108","739","30","31","716","5","55","105","257","111","106","99","9"]
+    epglist: ["Vl737_EPG","Vl26_EPG","Vl27_EPG","Vl110_EPG","Vl423_EPG","Vl28_EPG","Vl29_EPG","Vl107_EPG","Vl418_EPG","Vl22_EPG","Vl23_EPG","Vl448_EPG","Vl109_EPG","Vl104_EPG","Vl135_EPG","Vl34_EPG","Vl447_EPG","Vl7_EPG","Vl77_EPG","Vl103_EPG","Vl108_EPG","Vl739_EPG","Vl30_EPG","Vl31_EPG","Vl716_EPG","Vl5_EPG","Vl55_EPG","Vl105_EPG","Vl257_EPG","Vl111_EPG","Vl106_EPG","Vl99_EPG","Vl9_EPG"]
+    bdlist: ["Vl737_BD","Vl26_BD","Vl27_BD","Vl110_BD","Vl423_BD","Vl28_BD","Vl29_BD","Vl107_BD","Vl418_BD","Vl22_BD","Vl23_BD","Vl448_BD","Vl109_BD","Vl104_BD","Vl135_BD","Vl34_BD","Vl447_BD","Vl7_BD","Vl77_BD","Vl103_BD","Vl108_BD","Vl739_BD","Vl30_BD","Vl31_BD","Vl716_BD","Vl5_BD","Vl55_BD","Vl105_BD","Vl257_BD","Vl111_BD","Vl106_BD","Vl99_BD","Vl9_BD"]
+
+  tasks:
+    - name:                            ADD AUTOMATION USER
+      cisco.aci.aci_aaa_user:
+        host:                           sandboxapicdc.cisco.com
+        username:                       admin
+        password:                       ciscopsdt
+        validate_certs:                 no
+        annotation:			orchestrator:ansible
+        aaa_user:                       automation
+        aaa_password:                   mation3456
+        expiration:                     never
+        expires:                        no
+        email:                          auto@mation.org
+        phone:                          1-234-555-678
+        first_name:                     first
+        clear_password_history:         yes
+        last_name:                      "{{ desired_state }}"
+        state: present
+      delegate_to: localhost
+
+    - name:                             ADD CERTIFICATE TO AUTOMATION USER
+      cisco.aci.aci_aaa_user_certificate:
+        host:                           sandboxapicdc.cisco.com
+        username:                       admin
+        password:                       ciscopsdt
+        validate_certs:                 no
+        annotation:			orchestrator:ansible
+        aaa_user:                       automation
+        name:                           Automation
+        certificate_data:               '{{ lookup("file", "keys/automation.crt") }}'
+        state:                          present
+      delegate_to: localhost
+
+    - name:                             ADD CORRECT AUTOMATION RIGHT FOR USER AUTOMATION
+      cisco.aci.aci_rest:
+        host:                           sandboxapicdc.cisco.com
+        username:                       admin
+        password:                       ciscopsdt
+        validate_certs:                 no
+        annotation:			orchestrator:ansible
+        path:                           /api/node/mo/uni/userext/user-automation/userdomain-all.json
+        method:                         post
+        content:
+          {
+          "aaaUserDomain":{
+            "attributes":{
+              "dn":"uni/userext/user-automation/userdomain-all",
+              "name":"all",
+              "rn":"userdomain-all",
+              "status":"created,modified"
+            },
+            "children":[{
+              "aaaUserRole":{
+                "attributes":{
+                  "dn":"uni/userext/user-automation/userdomain-all/role-admin",
+                  "name":"admin",
+                  "privType":"writePriv",
+                  "rn":"role-admin",
+                  "status":"created,modified"},
+                  "children":[]
+                }
+              }]
+            }
+          }
+
+    - name:                             TENANT CREATION
+      aci_tenant:
+          <<:                           *apic_info
+          tenant:                       "NM"
+          state:                        "{{ desired_state }}"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+
+    - name:				VRF CREATION
+      aci_vrf:
+          <<:                           *apic_info
+          tenant:                       "NM"
+          vrf:				"DUMMY"
+          state:                        "{{ desired_state }}"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+
+    - name:				BRIDGE DOMAIN CREATION
+      aci_bd:
+          <<:                           *apic_info
+          tenant:                       "NM"
+          bd:				"{{ item }}"
+          vrf:				"DUMMY"
+          state:                        "{{ desired_state }}"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+      with_items: "{{ bdlist }}"
+
+    - name:				APPLICATION PROFILE CREATION
+      aci_ap:
+          <<:                           *apic_info
+          tenant:                       "NM"
+          ap:				"Network_Centric"
+          state:                        "{{ desired_state }}"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+
+    - name:				END POINT GROUP CREATION
+      aci_epg:
+          <<:                           *apic_info
+          tenant:                       "NM"
+          epg:				"{{ item }}"
+          ap:				"Network_Centric"
+          state:                        "{{ desired_state }}"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+      with_items: "{{ epglist }}"
+
+    - name:                             VLAN POOL CREATION
+      aci_vlan_pool:
+          <<:                           *apic_info
+          pool:                         "ExternalVlPool"
+          pool_allocation_mode:         "static"
+          state:                        "{{ desired_state }}"
+          annotation:                   "orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+
+    - name:                             VLAN POOL ENCAP BLOCK CREATION
+      aci_vlan_pool_encap_block:
+          <<:                           *apic_info
+          block_start:                  "{{ item }}"
+          block_end:                    "{{ item }}"
+          block_name:                   "{{ item }}"
+          pool_allocation_mode:         "static"
+          state:                        "{{ desired_state }}"
+          pool:                         "ExternalVlPool"
+          annotation:			"orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+      with_items: "{{ vlanlist }}"
+    
+    - name:                             ATTACHABLE ACCESS ENTITY PROFILE CREATION
+      aci_aep:
+          <<:                           *apic_info
+          aep:                          "ExternalDomain_AttEntityP"
+          state:                        "{{ desired_state }}"
+          annotation:                   "orchestrator:ansible"
+          description:                  "Created by Ansible -- LAB INITIALISATION"
+
+    - name:                             PHYSICAL DOMAIN CREATION
+      aci_domain:
+          <<:                           *apic_info
+          domain:                       "PhyDomain"
+          domain_type:                  "phys"
+          state:                        "{{ desired_state }}"
+          annotation:                   "orchestrator:ansible"
+ 
+    - name:                             ASSOCIATION AEP-PHYSICAL DOMAIN
+      aci_aep_to_domain:
+          <<:                           *apic_info
+          aep:                          "ExternalDomain_AttEntityP"
+          domain:                       "PhyDomain"
+          domain_type:                  "phys"
+          state:                        "{{ desired_state }}"
+          annotation:                   "orchestrator:ansible"
+
+    - name:                             ASSOCIATION VLAN POOL-PHYSICAL DOMAIN
+      aci_domain_to_vlan_pool:
+          <<:                           *apic_info
+          domain:                       "PhyDomain"
+          domain_type:                  "phys"
+          pool:                         "ExternalVlPool"
+          pool_allocation_mode:         "static"
+          state:                        "{{ desired_state }}"
+          annotation:                   "orchestrator:ansible"
+
+  tags:					init
+
+- import_playbook:                     ./snapshot.yaml
+  vars:
+    snapshotDescription:               INIT LAB
+  tags:                                init
+

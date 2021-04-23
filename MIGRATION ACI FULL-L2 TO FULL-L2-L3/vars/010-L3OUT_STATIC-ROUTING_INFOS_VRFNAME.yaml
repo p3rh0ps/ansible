@@ -1,0 +1,43 @@
+---
+staticroutes:
+- prefix: "0.0.0.0/0"
+  nhAddress: "10.12.0.1"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "101"
+  pod_id: "1"
+
+- prefix: "0.0.0.0/0"
+  nhAddress: "10.12.0.1"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "102"
+  pod_id: "1"
+
+- prefix: "0.0.0.0/0"
+  nhAddress: "10.12.0.1"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "121"
+  pod_id: "2"
+
+- prefix: "0.0.0.0/0"
+  nhAddress: "10.12.0.1"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "122"
+  pod_id: "2"
+
+- prefix: "172.19.0.0/16"
+  nhAddress: "172.17.1.206"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "105"
+  pod_id: "1"
+
+- prefix: "172.19.0.0/16"
+  nhAddress: "172.17.1.206"
+  tenant: "MYTENANT"
+  l3out_name: "L3OUT_VRFNAME"
+  node_id: "124"
+  pod_id: "2"

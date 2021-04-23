@@ -1,0 +1,96 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply correct L3Domain Configuration
+       private:                         no
+
+  tasks:
+    - name:
+      set_fact:
+        desired_state:                  present
+        #desired_state:                 absent
+        #desired_status:                modified,created
+        #desired_status:                deleted
+        #desired_scope:                  private
+        #desired_scope:                 public
+        #desired_scope:                 shared
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/000-GLOBAL-INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 004 L3DOMAIN INSTANTIATION
+  tags:                                 pre-snapshot
+
+
+- name:                                 CREATE L3DOMAIN ASSOCIATED TO L3OUT/VRF ASSOCIATE TO VLPOOL AND BIND IT TO AEP 004
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS L33DOMAIN
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             CREATION OF L3DOMAIN 004(01)
+      aci_domain:
+        <<:                             *apic_info
+        domain:                         "{{ item.domain_name }}"
+        domain_type:                    "{{ item.domain_type }}"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ extdomain }}"
+
+    - name:                             L3DOMAIN ASSOCIATION TO VLAN POOL 004(02)
+      aci_domain_to_encap_pool:
+        <<:                             *apic_info
+        domain:                         "{{ item.domain_name }}"
+        domain_type:                    "{{ item.domain_type }}"
+        pool:                           "{{ item.vlanpool }}"
+        pool_allocation_mode:           "{{ item.pool_allocation_mode }}"
+        pool_type:                      "{{ item.pool_type }}"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ extdomain }}"
+
+    - name:                             AEP TO L3DOMAIN ASSOCIATION/BINDING 004(03)
+      aci_aep_to_domain:
+        <<:                             *apic_info
+        aep:                            "{{ item.aaep }}"
+        domain:                         "{{ item.domain_name }}"
+        domain_type:                    "{{ item.domain_type }}"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ extdomain }}"
+
+  tags:
+    - l3domain
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 004 L3DOMAIN INSTANTIATION
+  tags:                                 post-snapshot
+

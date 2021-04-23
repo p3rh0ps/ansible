@@ -1,0 +1,63 @@
+---
+- name:                                      DISABLE LEGACY INTERFACES VLAN
+  hosts:                                     3850LAB
+  connection:                                network_cli
+  gather_facts:                              no
+
+  vars_prompt:
+     - name:                                 vrfrun
+       prompt:                               Please Choose your VRF to apply VLAN from VLPool Deletion
+       private:                              no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS INTERFACES
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                                  SET DESIRED STATES, STATUS AND OR SPECFILES
+      set_fact:
+        vrfrun:                              "{{ vrfrun }}"
+        intfilepath:                         vars/005_VRF_INTERFACES_{{ vrfrun }}.yaml
+
+    - name:                                  GET VERSION AND STATES OF SWITCH BEFORE CHANGES
+      ios_command:
+        commands:
+          - show version
+          - show ip interface brief
+          - show interfaces status
+          - show interfaces description
+          - show running-config | include Last configuration change at
+      register: pre_show_command_output
+
+    - name:                                  PRE-SAVE FOR CONFIG REVIEW
+      copy:
+        content:                             "{{ pre_show_command_output }}"
+        dest:                                logs/ios-pre-{{ vrfrun }}.log
+
+    - name:                                  OVERRIDE DEVICE CONFIGURATION AND SHUTDOWN ALL INTERFACES FROM CHOOSEN VRF
+      ios_config:
+        lines:
+        - description Configured and Overridden by Ansible L3 Migration
+        - shutdown
+        parents:                             '{{ item.parent }}'
+      with_items:
+        - "{{ interfaces }}"
+
+    - name:                                  SAVE RUNNING-CONFIGURATION TO STARTUP CONFIGURATION AFTER CHANGES
+      cisco.ios.ios_config:
+        save_when:                           modified
+
+    - name:                                  GET VERSION AND STATES OF SWITCH AFTER CHANGES 
+      ios_command:
+        commands:
+          - show version
+          - show ip interface brief
+          - show interfaces status
+          - show interfaces description
+          - show running-config | include Last configuration change at
+      register: post_show_command_output
+
+    - name:                                 SAVE LOG FILES FOR REVIEW
+      copy:
+        content:                            "{{ post_show_command_output }}"
+        dest:                               logs/ios-post-{{ vrfrun }}.log

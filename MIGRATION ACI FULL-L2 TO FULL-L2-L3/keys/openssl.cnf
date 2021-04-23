@@ -1,0 +1,15 @@
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C = FR
+ST = LA
+L = Nantes
+O = NantesMetropole
+OU = DRN
+CN = www.nantesmetropole.fr
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth

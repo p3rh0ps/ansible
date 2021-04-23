@@ -1,0 +1,176 @@
+#==============================================================================================
+# External Vlan Pool Infos
+#==============================================================================================
+
+vlan:
+- poolname: "VRFNAME"
+  blockname: "737"
+  vlan_start: "737" 
+  vlan_end: "737" 
+
+- poolname: "VRFNAME"
+  blockname: "26"
+  vlan_start: "26"
+  vlan_end: "26"
+
+- poolname: "VRFNAME"
+  blockname: "27"
+  vlan_start: "27"
+  vlan_end: "27"
+
+- poolname: "VRFNAME"
+  blockname: "110"
+  vlan_start: "110"
+  vlan_end: "110"
+
+- poolname: "VRFNAME"
+  blockname: "16"
+  vlan_start: "16"
+  vlan_end: "16"
+
+#==============================================================================================
+# External Domain Infos
+#==============================================================================================
+
+extdomain:
+- domain_name: "VRFNAME_RTDDOM"
+  domain_type: "l3dom"
+  vlanpool: "VRFNAME"
+  pool_allocation_mode: "static"
+  pool_type: "vlan"
+  aaep: "AAEP_L3"
+
+#==============================================================================================
+# l3Out Infos
+#==============================================================================================
+
+l3out:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  vrf: "Nm_Billetterie"
+  l3out_domain: "VRFNAME_RTDDOM"
+  l3protocol: "bgp"
+
+nodes:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "1"
+  node: "101"
+  routerid: "172.22.80.101"
+  loopbid: "172.22.80.101"
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "1"
+  node: "102"
+  routerid: "172.22.80.102"
+  loopbid: "172.22.80.102"
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "2"
+  node: "121"
+  routerid: "172.22.80.121"
+  loopbid: "172.22.80.121"
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "2"
+  node: "122"
+  routerid: "172.22.80.122"
+  loopbid: "172.22.80.122"
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "1"
+  node: "105"
+  routerid: "172.22.80.105"
+  loopbid: "172.22.80.105"
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  pod: "2"
+  node: "124"
+  routerid: "172.22.80.124"
+  loopbid: "172.22.80.124"
+
+singlenobgp:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  node: "105"
+  vlan: "110"
+  intftype: "svi"
+  pod: "1"
+  intf: "eth1/4"
+  ipnetattrpri: '172.17.1.202/29'
+  ipnetattrsec: '172.17.1.201/29'
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  node: "124"
+  vlan: "110"
+  intftype: "svi"
+  pod: "2"
+  intf: "eth1/3"
+  ipnetattrpri: '172.17.1.203/29'
+  ipnetattrsec: '172.17.1.201/29'
+
+vpcnobgp:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  nodes: "101:102"
+  vlan: "737"
+  intftype: "svi"
+  pod: "1"
+  intPolGrp: "VPC_FW_101"
+  ipnetattrA: '10.12.0.11/24'
+  ipnetattrB: '10.12.0.13/24'
+  ipnetattrsec: '10.12.0.5/24'
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  nodes: "121:122"
+  vlan: "737"
+  intftype: "svi"
+  pod: "2"
+  intPolGrp: "VPC_FW_201"
+  ipnetattrA: '10.12.0.10/24'
+  ipnetattrB: '10.12.0.12/24'
+  ipnetattrsec: '10.12.0.5/24'
+
+singlebgp:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  node: "121"
+  vlan: "16"
+  intftype: "svi"
+  pod: "2"
+  intf: "eth1/4"
+  ipnetattr: '172.17.2.57/29'
+  bgppeeraddr: '172.17.2.62'
+  bgppeerasn: '65000'
+
+vpcbgp:
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  nodes: "101:102"
+  vlan: "26"
+  intftype: "svi"
+  pod: "1"
+  intPolGrp: "VPC_SW_101"
+  ipnetattrA: '172.17.1.97/29'
+  ipnetattrB: '172.17.1.98/29'
+  bgppeeraddr: '172.17.1.102'
+  bgppeerasn: '65000'
+
+- l3out_name: "L3OUT_VRFNAME"
+  tenant: "MYTENANT"
+  nodes: "121:122"
+  vlan: "27"
+  intftype: "svi"
+  pod: "2"
+  intPolGrp: "VPC_SW_201"
+  ipnetattrA: '172.17.1.105/29'
+  ipnetattrB: '172.17.1.106/29'
+  bgppeeraddr: '172.17.1.110'
+  bgppeerasn: '65000'

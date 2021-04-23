@@ -1,0 +1,78 @@
+---
+- name:                   Define global settings
+  hosts:                  localhost
+  connection:             local
+  gather_facts:           no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply Default Leak Policy
+       private:                         no
+
+  tasks:
+    - name:                             
+      set_fact:
+        desired_state:                  present
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/008-EXTERNAL-EPGS_INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 008 L3OUT EXTERNAL EPG CREATION
+  tags:                                 snapshot
+
+- name:                                 EXTERNAL EPGS INSTANTIATION
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS EXTERNAL EPGS
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             EXTERNAL EPGS CREATION 008(00)
+      aci_l3out_extepg: 
+          <<:                           *apic_info
+          tenant:                       "{{ item.tenant }}"
+          l3out:                        "{{ item.l3out }}"
+          name:                         "{{ item.extepg }}"
+          annotation:                   "orchestrator:ansible"
+          state:                        "{{ desired_state }}"
+      with_items:
+        - "{{ extepgs }}"
+
+    - name:                             EXTERNAL EPGS SUBNETS ASSOCIATION 008(01)
+      aci_l3out_extsubnet:
+          <<:                           *apic_info
+          tenant:                       "{{ item.tenant }}"
+          l3out:                        "{{ item.l3out }}"
+          extepg:                       "{{ item.extepg }}"
+          network:                      "{{ item.network }}"
+          scope:                        "{{ item.scope }}"
+          annotation:                   "orchestrator:ansible"
+          state:                        "{{ desired_state }}"
+      with_items:
+        - "{{ extepgs }}"
+
+  tags:
+    - external-epgs
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 008 L3OUT EXTERNAL EPG CREATION
+  tags:                                 snapshot

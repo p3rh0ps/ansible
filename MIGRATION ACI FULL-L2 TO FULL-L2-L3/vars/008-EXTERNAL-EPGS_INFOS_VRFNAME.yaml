@@ -1,0 +1,55 @@
+---
+#==============================================================================================
+# P2P NETWORK External EPGs
+#==============================================================================================
+extepgs:
+- extepg:       "extEPG_P2P"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "172.17.1.96/29"
+  scope:        "import-security"
+
+- extepg:       "extEPG_P2P"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "172.17.1.104/29"
+  scope:        "import-security"
+
+- extepg:       "extEPG_P2P"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "172.17.1.200/29"
+  scope:        "import-security"
+
+- extepg:       "extEPG_P2P"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "10.12.0.0/16"
+  scope:        "import-security"
+
+#==============================================================================================
+# PARTNERS External EPGs
+#==============================================================================================
+
+- extepg:       "extEPG_SFR"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "172.19.92.0/24"
+  scope:        "import-security"
+
+#==============================================================================================
+# BACKBONE External EPGs
+#==============================================================================================
+
+- extepg:       "extEPG_BB"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "172.19.0.0/16"
+  scope:        "import-security"
+
+- extepg:       "extEPG_BB"
+  tenant:       "MYTENANT"
+  l3out:        "L3OUT_VRFNAME"
+  network:      "10.131.0.0/16"
+  scope:        "import-security"
+

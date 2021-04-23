@@ -1,0 +1,41 @@
+#==============================================================================================
+# EPG/BD Infos
+#==============================================================================================
+
+epg:
+- tenant: "MYTENANT"
+  appprofile: "Network_Centric"
+  bd: "Vl737_BD"
+  epg: "Vl737_EPG"
+
+- tenant: "MYTENANT"
+  appprofile: "Network_Centric"
+  bd: "Vl26_BD"
+  epg: "Vl26_EPG"
+
+- tenant: "MYTENANT"
+  appprofile: "Network_Centric"
+  bd: "Vl27_BD"
+  epg: "Vl27_EPG"
+
+- tenant: "MYTENANT"
+  appprofile: "Network_Centric"
+  bd: "Vl110_BD"
+  epg: "Vl110_EPG"
+
+bd:
+- tenant: "MYTENANT"
+  vrf:    "default"
+  bd:     "Vl737_BD"
+
+- tenant: "MYTENANT"
+  vrf:    "default"
+  bd:     "Vl26_BD"
+
+- tenant: "MYTENANT"
+  vrf:    "default"
+  bd:     "Vl27_BD"
+
+- tenant: "MYTENANT"
+  vrf:    "default"
+  bd:     "Vl110_BD"

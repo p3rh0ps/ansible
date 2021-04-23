@@ -1,0 +1,79 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply VlPool, L3 Domain and AEP L3D bindings
+       private:                         no
+
+  tasks:
+    - name:
+      set_fact:
+        desired_state:                  present
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/000-GLOBAL-INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs: no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 003 CREATE VLPOOL USED BY L3OUT AND PROVISION VLAN 
+  tags:                                 pre-snapshot
+
+- name:                                 CREATE VLPOOL TO HOST VLANS FOR P2P L3OUT INTERCONNECTION
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS VLAN POOL
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             CREATE VLAN POOL
+      aci_vlan_pool:
+        <<:                             *apic_info
+        pool:                           "{{ item.vlanpool }}"
+        pool_allocation_mode:           static
+        description:                    "Created by Ansible Op-003(01)"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ extdomain }}"
+
+    - name:                             AFFECT VLAN BLOCK TO VLAN POOL
+      aci_vlan_pool_encap_block:
+        <<:                             *apic_info
+        pool:                           "{{ item.poolname }}"
+        pool_allocation_mode:           static
+        block_name:                     "{{ item.blockname }}"
+        block_start:                    "{{ item.vlan_start }}"
+        block_end:                      "{{ item.vlan_end }}"
+        description:                    "Created by Ansible Op-003(02)"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ vlan }}"
+  tags:
+    - vlpool
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 003 CREATE VLPOOL USED BY L3OUT AND PROVISION VLAN 
+  tags:                                 post-snapshot
+

@@ -1,0 +1,60 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  tasks:
+    - name:                             Set Desired state, status and or specfiles
+      set_fact:
+        desired_state:                  present
+        #desired_state:                 absent
+        #desired_status:                modified,created
+        #desired_status:                deleted
+
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                 PRE- 002 VRF Creation
+  tags:                                  pre-snapshot
+
+- name:                                  CONFIGURE VRF INSTANCES
+  hosts:                                 localhost
+  connection:                            local
+  gather_facts:                          no
+
+  vars_files:
+       - ./vars/002_ALLVRFS.yaml
+
+  tasks:
+    - name:                             
+      aci_vrf:
+          <<:                           *apic_info
+          tenant:                       "{{ item.tenant }}"
+          vrf:                          "{{ item.vrf }}"
+          policy_control_preference:    "{{ item.pcp }}"
+          policy_control_direction:     "{{ item.pcd }}"
+          annotation:                   "orchestrator:ansible"
+          state:                        "{{ desired_state }}"
+      with_items:
+        - "{{ vrf }}"
+  tags:
+    - vrf
+
+- import_playbook:                       ./snapshot.yaml
+  vars:
+    snapshotDescription:                 POST- 003 VRF CREATION
+  tags:                                  post-snapshot

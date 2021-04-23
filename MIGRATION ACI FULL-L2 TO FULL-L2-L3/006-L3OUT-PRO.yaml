@@ -1,0 +1,92 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply correct L3Out Configuration
+       private:                         no
+
+  tasks:
+    - name:
+      set_fact:
+        desired_state:                  present
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/000-GLOBAL-INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                PRE- 006 L3OUT INSTANTIATION
+  tags:                                 pre-snapshot
+
+
+- name:                                 CREATE L3OUT AND GENERIC NODE PROFILE
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS L3OUT
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             CREATION OF L3OUT
+      aci_l3out:
+        <<:                             *apic_info
+        tenant:                         "{{ item.tenant }}"
+        name:                           "{{ item.l3out_name }}"
+        domain:                         "{{ item.l3out_domain }}"
+        vrf:                            "{{ item.vrf }}"
+        l3protocol:                     "{{ item.l3protocol }}"
+        route_control:                  export
+        description:                    "Created by Ansible Op-006"
+        annotation:                     "orchestrator:ansible"
+        state:                          "{{ desired_state }}"
+      with_items:
+        - "{{ l3out }}"
+
+    - name:                             NODE PROFILE CREATION
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile.json'
+          content:
+            l3extLNodeP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                configIssues: ''
+                descr: ''
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile'
+                name: '{{ item.l3out_name }}_nodeProfile'
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                tag: yellow-green
+                targetDscp: unspecified
+      with_items:
+        - "{{ l3out }}"
+
+  tags:
+    - l3out
+
+- import_playbook:                      ./snapshot.yaml
+  vars:
+    snapshotDescription:                POST- 006 L3OUT INSTANTIATION
+  tags:                                 post-snapshot
+

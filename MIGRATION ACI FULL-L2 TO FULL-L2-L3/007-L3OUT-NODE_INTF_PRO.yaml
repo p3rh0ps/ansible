@@ -1,0 +1,416 @@
+---
+- name:                                 Define global settings
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  vars_files:
+     - ./global-vars/apic-details.yaml
+
+  vars_prompt:
+     - name:                            vrfrun
+       prompt:                          Please Choose your VRF to apply correct L3Domain Configuration
+       private:                         no
+
+  tasks:
+    - name:
+      set_fact:
+        desired_state:                  present
+        vrfrun:                         "{{ vrfrun }}"
+        vrffilepath:                    vars/000-GLOBAL-INFOS_{{ vrfrun }}.yaml
+        
+    - name:                             apic details
+      set_fact:
+        apic_info:                      &apic_info
+          host:                         "{{ apic_info.host }}"
+          username:                     "{{ apic_info.username }}"
+          private_key:                  "{{ apic_info.private_key }}"
+          certificate_name:             "{{ apic_info.certificate_name }}"
+          validate_certs:               no
+
+  tags:                                 always
+
+- name:                                 REST-API VPC / PO AND SINGLE PORT INTERFACE NODE PROFILE
+  hosts:                                localhost
+  connection:                           local
+  gather_facts:                         no
+
+  pre_tasks:
+    - name:                             INCLUDE SPECS NODE PROFILE
+      include_vars:                     "{{ vrffilepath }}"
+
+  tasks:
+    - name:                             LOGICAL NODE PROFILE AND VPC PEERS NODE CREATION
+      ignore_errors:                    yes
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile.json'
+          content:
+            l3extRsNodeL3OutAtt:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                configIssues: ''
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/rsnodeL3OutAtt-[topology/pod-{{ item.pod }}/node-{{ item.node }}]'
+                rtrId: '{{ item.routerid }}'
+                rtrIdLoopBack: 'no'
+                tDn: 'topology/pod-{{ item.pod }}/node-{{ item.node }}'
+              children:
+              - l3extLoopBackIfP:
+                  attributes:
+                    addr: '{{ item.loopbid }}'
+                    annotation: 'orchestrator:ansible'
+                    descr: ''
+                    name: ''
+                    nameAlias: ''
+      with_items:
+        - "{{ nodes }}"
+
+    - name:                             STANDALONE PORT WITH SVI WITHOUT BGP PEERING [STATIC ROUTING] LOGICAL INTERFACE PROFILE CREATION
+      ignore_errors:                    yes
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         "/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.node }}_{{ item.intf | regex_replace('\\/', '_') }}_{{ item.vlan }}.json"
+          content:
+            l3extLIfP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                descr: ''
+                dn: "uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.node }}_{{ item.intf | regex_replace('/', '_') }}_{{ item.vlan }}"
+                name: "{{ item.l3out_name }}_{{ item.node }}_{{ item.intf | regex_replace('\\/', '_') }}_{{ item.vlan }}"
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                prio: unspecified
+                tag: yellow-green
+              children:
+              - l3extRsPathL3OutAtt:
+                  attributes:
+                    addr: '{{ item.ipnetattrpri }}'
+                    annotation: 'orchestrator:ansible'
+                    autostate: disabled
+                    descr: ''
+                    encap: 'vlan-{{ item.vlan }}'
+                    encapScope: ctx
+                    ifInstT: 'ext-{{ item.intftype }}'
+                    ipv6Dad: enabled
+                    llAddr: "::"
+                    mac: 00:22:BD:F8:19:FF
+                    mode: regular
+                    mtu: 'inherit'
+                    tDn: 'topology/pod-{{ item.pod }}/paths-{{ item.node }}/pathep-[{{ item.intf }}]'
+                    targetDscp: unspecified
+                  children:
+                  - l3extIp:
+                      attributes:
+                        addr: '{{ item.ipnetattrsec }}'
+                        annotation: ''
+                        descr: ''
+                        ipv6Dad: enabled
+                        name: ''
+                        nameAlias: ''
+              - l3extRsNdIfPol:
+                  attributes:
+                    annotation: ''
+                    tnNdIfPolName: ''
+              - l3extRsLIfPCustQosPol:
+                  attributes:
+                    annotation: ''
+                    tnQosCustomPolName: ''
+              - l3extRsIngressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsEgressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsArpIfPol:
+                  attributes:
+                    annotation: ''
+                    tnArpIfPolName: '' 
+      with_items:
+        - "{{ singlenobgp }}"
+
+    - name:                             STANDALONE PORT WITH SVI AND BGP PEERING LOGICAL INTERFACE PROFILE CREATION
+      ignore_errors:                    yes
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.node }}.json'
+          content:
+            l3extLIfP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                descr: ''
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.node }}'
+                name: '{{ item.l3out_name }}_{{ item.node }}'
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                prio: unspecified
+                tag: yellow-green
+              children:
+              - l3extRsPathL3OutAtt:
+                  attributes:
+                    addr: '{{ item.ipnetattr }}'
+                    annotation: 'orchestrator:ansible'
+                    autostate: disabled
+                    descr: ''
+                    encap: 'vlan-{{ item.vlan }}'
+                    encapScope: local
+                    ifInstT: 'ext-{{ item.intftype }}'
+                    ipv6Dad: enabled
+                    llAddr: "::"
+                    mac: 00:22:BD:F8:19:FF
+                    mode: regular
+                    mtu: 'inherit'
+                    tDn: 'topology/pod-{{ item.pod }}/paths-{{ item.node }}/pathep-[{{ item.intf }}]'
+                    targetDscp: unspecified
+                  children:
+                  - bgpPeerP:
+                      attributes:
+                        addr: '{{ item.bgppeeraddr }}'
+                        addrTCtrl: af-ucast
+                        allowedSelfAsCnt: '3'
+                        annotation: 'orchestrator:ansible'
+                        ctrl: 'send-com,send-ext-com'
+                        descr: ''
+                        name: ''
+                        nameAlias: ''
+                        peerCtrl: ''
+                        privateASctrl: ''
+                        ttl: '1'
+                        weight: '0'
+                      children:
+                      - bgpRsPeerPfxPol:
+                          attributes:
+                            annotation: ''
+                            tnBgpPeerPfxPolName: ''
+                      - bgpAsP:
+                          attributes:
+                            annotation: 'orchestrator:ansible'
+                            asn: '{{ item.bgppeerasn }}'
+                            descr: ''
+                            name: ''
+                            nameAlias: ''
+              - l3extRsNdIfPol:
+                  attributes:
+                    annotation: ''
+                    tnNdIfPolName: ''
+              - l3extRsLIfPCustQosPol:
+                  attributes:
+                    annotation: ''
+                    tnQosCustomPolName: ''
+              - l3extRsIngressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsEgressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsArpIfPol:
+                  attributes:
+                    annotation: ''
+                    tnArpIfPolName: '' 
+      with_items:
+        - "{{ singlebgp }}"
+
+    - name:                             VPC INTERFACE WITH BGP AND SVI LOGICAL INTERFACE PROFILE CREATION
+      ignore_errors:                    yes
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.nodes }}.json'
+          content:
+            l3extLIfP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                descr: ''
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.nodes }}'
+                name: '{{ item.l3out_name }}_{{ item.nodes }}'
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                prio: unspecified
+                tag: yellow-green
+              children:
+              - l3extRsPathL3OutAtt:
+                  attributes:
+                    addr: 0.0.0.0
+                    annotation: 'orchestrator:ansible'
+                    autostate: disabled
+                    descr: ''
+                    encap: 'vlan-{{ item.vlan }}'
+                    encapScope: local
+                    ifInstT: 'ext-{{ item.intftype }}'
+                    ipv6Dad: enabled
+                    llAddr: "::"
+                    mac: 00:22:BD:F8:19:FF
+                    mode: regular
+                    mtu: 'inherit'
+                    tDn: 'topology/pod-{{ item.pod }}/protpaths-{{ item.nodes | regex_replace(':', '-') }}/pathep-[{{ item.intPolGrp }}]'
+                    targetDscp: unspecified
+                  children:
+                  - l3extMember:
+                      attributes:
+                        addr: '{{ item.ipnetattrA }}'
+                        annotation: 'orchestrator:ansible'
+                        descr: ''
+                        ipv6Dad: enabled
+                        llAddr: "::"
+                        name: ''
+                        nameAlias: ''
+                        side: A
+                  - l3extMember:
+                      attributes:
+                        addr: '{{ item.ipnetattrB }}'
+                        annotation: 'orchestrator:ansible'
+                        descr: ''
+                        ipv6Dad: enabled
+                        llAddr: "::"
+                        name: ''
+                        nameAlias: ''
+                        side: B
+                  - bgpPeerP:
+                      attributes:
+                        addr: '{{ item.bgppeeraddr }}'
+                        addrTCtrl: af-ucast
+                        allowedSelfAsCnt: '3'
+                        annotation: 'orchestrator:ansible'
+                        ctrl: 'send-com,send-ext-com'
+                        descr: ''
+                        name: ''
+                        nameAlias: ''
+                        peerCtrl: ''
+                        privateASctrl: ''
+                        ttl: '1'
+                        weight: '0'
+                      children:
+                      - bgpRsPeerPfxPol:
+                          attributes:
+                            annotation: ''
+                            tnBgpPeerPfxPolName: ''
+                      - bgpAsP:
+                          attributes:
+                            annotation: 'orchestrator:ansible'
+                            asn: '{{ item.bgppeerasn }}'
+                            descr: ''
+                            name: ''
+                            nameAlias: ''
+              - l3extRsNdIfPol:
+                  attributes:
+                    annotation: ''
+                    tnNdIfPolName: ''
+              - l3extRsLIfPCustQosPol:
+                  attributes:
+                    annotation: ''
+                    tnQosCustomPolName: ''
+              - l3extRsIngressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsEgressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsArpIfPol:
+                  attributes:
+                    annotation: ''
+                    tnArpIfPolName: '' 
+      with_items:
+        - "{{ vpcbgp }}"
+
+    - name:                             VPC WITH SVI WITHOUT BGP [STATIC ROUTING] INTERFACE LOGICAL INTERFACE PROFILE CREATION
+      ignore_errors:                    yes
+      aci_rest:
+          <<:                           *apic_info
+          method:                       post
+          path:                         '/api/mo/uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.nodes }}.json'
+          content:
+            l3extLIfP:
+              attributes:
+                annotation: 'orchestrator:ansible'
+                descr: ''
+                dn: 'uni/tn-{{ item.tenant }}/out-{{ item.l3out_name }}/lnodep-{{ item.l3out_name }}_nodeProfile/lifp-{{ item.l3out_name }}_{{ item.nodes }}'
+                name: '{{ item.l3out_name }}_{{ item.nodes }}'
+                nameAlias: ''
+                ownerKey: ''
+                ownerTag: ''
+                prio: unspecified
+                tag: yellow-green
+              children:
+              - l3extRsPathL3OutAtt:
+                  attributes:
+                    addr: 0.0.0.0
+                    annotation: 'orchestrator:ansible'
+                    autostate: disabled
+                    descr: ''
+                    encap: 'vlan-{{ item.vlan }}'
+                    encapScope: ctx
+                    ifInstT: 'ext-{{ item.intftype }}'
+                    ipv6Dad: enabled
+                    llAddr: "::"
+                    mac: 00:22:BD:F8:19:FF
+                    mode: regular
+                    mtu: 'inherit'
+                    tDn: 'topology/pod-{{ item.pod }}/protpaths-{{ item.nodes | regex_replace(':', '-') }}/pathep-[{{ item.intPolGrp }}]'
+                    targetDscp: unspecified
+                  children:
+                  - l3extMember:
+                      attributes:
+                        addr: '{{ item.ipnetattrA }}'
+                        annotation: 'orchestrator:ansible'
+                        descr: ''
+                        ipv6Dad: enabled
+                        llAddr: "::"
+                        name: ''
+                        nameAlias: ''
+                        side: A
+                      children:
+                      - l3extIp:
+                          attributes:
+                            addr: '{{ item.ipnetattrsec }}'
+                            annotation: 'orchestrator:ansible'
+                            descr: ''
+                            ipv6Dad: enabled
+                            name: ''
+                            nameAlias: ''
+                  - l3extMember:
+                      attributes:
+                        addr: '{{ item.ipnetattrB }}'
+                        annotation: 'orchestrator:ansible'
+                        descr: ''
+                        ipv6Dad: enabled
+                        llAddr: "::"
+                        name: ''
+                        nameAlias: ''
+                        side: B
+              - l3extRsNdIfPol:
+                  attributes:
+                    annotation: ''
+                    tnNdIfPolName: ''
+              - l3extRsLIfPCustQosPol:
+                  attributes:
+                    annotation: ''
+                    tnQosCustomPolName: ''
+              - l3extRsIngressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsEgressQosDppPol:
+                  attributes:
+                    annotation: ''
+                    tnQosDppPolName: ''
+              - l3extRsArpIfPol:
+                  attributes:
+                    annotation: ''
+                    tnArpIfPolName: '' 
+      with_items:
+        - "{{ vpcnobgp }}"
+  tags:
+
+  tags:
+    - l3outmisc

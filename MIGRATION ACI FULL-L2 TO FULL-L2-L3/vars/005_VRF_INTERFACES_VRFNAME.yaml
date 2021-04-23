@@ -1,0 +1,9 @@
+#==============================================================================================
+# 4500X SVIs TO SHUTDOWN Infos
+#==============================================================================================
+
+interfaces:
+- parent: "interface Vlan26"
+- parent: "interface Vlan27"
+- parent: "interface Vlan110"
+- parent: "interface Vlan737"
