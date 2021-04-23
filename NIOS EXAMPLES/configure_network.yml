@@ -1,0 +1,11 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: return next available IP address for network 172.27.128.0/24
+      set_fact:
+        ipaddr: "{{ lookup('community.general.nios_next_ip', '172.27.128.0/24', num=3, provider=nios_provider) }}"
+
+    - name: Check retrieved IP Address
+      debug:
+        var: ipaddr

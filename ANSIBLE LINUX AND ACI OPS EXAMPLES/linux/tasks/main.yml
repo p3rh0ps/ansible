@@ -1,0 +1,85 @@
+---
+# tasks file for linux
+#
+- name: Extract information from customer information spreadsheet
+  read_csv:
+    path: "/path/to/customerSpecs.csv"
+    fieldnames: uuid,template,srvName,customCpu,customMem,ipv4Addr,ipv4Mask,ipv4Gw,epgName,bdName,packProfile
+    delimiter: ','
+  register: datacust
+  delegate_to: localhost
+
+- name: Add Repository bionic main restricted [FR] into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic main restricted
+    state: present
+
+- name: Add Repository bionic-updates main restricted [FR] into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-updates main restricted 
+    state: present
+
+- name: Add Repository bionic universe [FR] into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic universe 
+    state: present
+
+- name: Add Repository bionic-updates universe [FR] into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-updates universe
+    state: present
+
+- name: Add Repository [FR] bionic multiverse into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic multiverse
+    state: present
+
+- name: Add Repository [FR] bionic-updates multiverse into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-updates multiverse 
+    state: present
+
+- name: Add Repository [FR] bionic-security main restricted into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-security main restricted
+    state: present
+
+- name: Add Repository [FR] bionic-security universe into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-security universe
+    state: present
+
+- name: Add Repository [FR] bionic-security multiverse into sources list
+  apt_repository:
+    repo: deb http://fr.archive.ubuntu.com/ubuntu bionic-security multiverse
+    state: present
+
+- name: Update apt-get repo and cache update
+  apt:
+    update_cache: yes
+    force_apt_get: yes
+    cache_valid_time: 3600
+
+- name: Install apache2 on Front Servers
+  apt:
+    name: apache2
+    force_apt_get: yes
+    state: present
+    update_cache: yes
+  when: ansible_fqdn is search("FRONT.*")
+
+- name: Install Tomcat9 on App Servers
+  apt:
+    name: tomcat9
+    force_apt_get: yes
+    state: present
+    update_cache: yes
+  when: ansible_fqdn is search("APP.*")
+
+- name: Install postgresql on DB Servers
+  apt:
+    name: postgresql
+    force_apt_get: yes
+    state: absent
+    update_cache: yes
+  when: ansible_fqdn is search("DB.*")

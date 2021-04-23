@@ -1,0 +1,49 @@
+---
+# main playbook
+- hosts: apic
+  gather_facts: no
+  module_defaults:
+    aci_rest:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_filter:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_filter_entry:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_epg_to_contract:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_contract:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_contract_subject:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+    aci_contract_subject_to_filter:
+      host: apic-01
+      username: admin
+      private_key: /home/stanley/ansible/roles/apic/files/admin.key
+      certificate_name: AnsibleStackStorm
+      validate_certs: no
+  roles:
+    - role: apic

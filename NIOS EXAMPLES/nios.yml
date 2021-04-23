@@ -1,0 +1,5 @@
+---
+nios_provider:
+  host: 10.1.2.233
+  username: admin
+  password: MyWonderfulPass

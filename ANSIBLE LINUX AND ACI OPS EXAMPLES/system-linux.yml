@@ -1,0 +1,12 @@
+---
+# Main
+#
+- hosts: allsrvs-inst
+  roles:
+    - role: linux
+      sudo: yes
+      become: yes
+      become_user: root
+      become_method: sudo
+      gather_facts: yes
+      connection: ssh

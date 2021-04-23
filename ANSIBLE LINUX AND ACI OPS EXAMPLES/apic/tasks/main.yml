@@ -1,0 +1,311 @@
+---
+- name: via ACI REST-API module Export Contract from tenant common to {{ tenant_name }} for shared services
+  aci_rest:
+    path: /api/node/mo/uni/tn-{{ tenant_name }}/cif-Export_inter-vrf-contract.json
+    method: post
+    content:
+      {
+        "vzCPIf": {
+            "attributes": {
+                "dn": "uni/tn-{{ tenant_name }}/cif-Export_inter-vrf-contract",
+                "name": "Export_inter-vrf-contract",
+                "status": "created,modified"
+            },
+            "children": [{
+                    "vzRsIf": {
+                        "attributes": {
+                            "tDn": "uni/tn-common/brc-inter-vrf-contract",
+                            "status": "created,modified"
+                        },
+                        "children": []
+                    }
+                }
+            ]
+        }
+      }
+  delegate_to: localhost
+
+- name: via aci_filter ansible module Add filter icmpFilter
+  aci_filter:
+    filter: icmp_filter
+    description: ACL for ICMP
+    tenant: "{{ tenant_name }}"
+    state: present
+  delegate_to: localhost
+
+- name: via aci_filter ansible module Add filter Secure webFilter
+  aci_filter:
+    filter: webs_filter
+    description: ACL for web protocols HTTPS
+    tenant: "{{ tenant_name }}"
+    state: present
+  delegate_to: localhost
+
+- name: via aci_filter ansible module Add filter webFilter
+  aci_filter:
+    filter: web_filter
+    description: ACL for web protocols HTTP
+    tenant: "{{ tenant_name }}"
+    state: present
+  delegate_to: localhost
+
+- name: via aci_filter ansible module Add filter dbFilter
+  aci_filter:
+    filter: db_filter
+    description: ACL for mongoDB
+    tenant: "{{ tenant_name }}"
+    state: present
+  delegate_to: localhost
+
+- name: via aci_filter_entry ansible module Filter Entry for HTTP
+  aci_filter_entry:
+    state: present
+    entry: http
+    tenant: "{{ tenant_name }}"
+    ether_type: ip
+    ip_protocol: tcp
+    dst_port: "80"
+    filter: web_filter
+    descr: ACE entry http
+  delegate_to: localhost
+
+- name: via aci_filter_entry ansible Filter Entry for HTTPS
+  aci_filter_entry:
+    state: present
+    entry: https
+    tenant: "{{ tenant_name }}"
+    ether_type: ip
+    ip_protocol: tcp
+    dst_port: "443"
+    filter: webs_filter
+    descr: ACE entry https
+  delegate_to: localhost
+
+- name: via aci_filter_entry ansible Filter Entry for ICMP
+  aci_filter_entry:
+    state: present
+    entry: icmp
+    tenant: "{{ tenant_name }}"
+    ether_type: ip
+    ip_protocol: icmp
+    filter: icmp_filter
+    descr: ACE entry icmp
+  delegate_to: localhost
+
+- name: via aci_filter_entry ansible Filter Entry for Mongodb
+  aci_filter_entry:
+    state: present
+    entry: mongodb
+    tenant: "{{ tenant_name }}"
+    ether_type: ip
+    ip_protocol: tcp
+    dst_port: "27017"
+    filter: db_filter
+    descr: ACE entry mongodb
+  delegate_to: localhost
+
+- name: via aci_contract ansible Contract Secure Web Front
+  aci_contract:
+    tenant: "{{ tenant_name }}"
+    contract: HTTPS_FRONT
+    description: Provide HTTPS connectivity from outside to FRONT EPG
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract ansible Contract Web App
+  aci_contract:
+    tenant: "{{ tenant_name }}"
+    contract: HTTP_APP
+    description: Provide HTTP connectivity from FRONT EPG to APP EPG
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract ansible Contract db DB
+  aci_contract:
+    tenant: "{{ tenant_name }}"
+    contract: MONGODB_DB
+    description: Provide MONGODB connectivity from DB EPG to APP EPG
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract ansible Contract ICMP vzany
+  aci_contract:
+    tenant: "{{ tenant_name }}"
+    contract: ICMP_VZANY
+    description: Provide ICMP connectivity for ALL EPGs in the VRF
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract_subject module Contract Subject Front
+  aci_contract_subject:
+    tenant: "{{ tenant_name }}"
+    contract: HTTPS_FRONT
+    reverse_filter: no
+    state: present
+    subject: SUBJECT-HTTPS_FRONT
+  delegate_to: localhost
+
+- name: via aci_contract_subject_to_filter module Subject to filters binding for contract HTTPS_FRONT
+  aci_contract_subject_to_filter:
+     tenant: "{{ tenant_name }}"
+     contract: HTTPS_FRONT
+     subject: SUBJECT-HTTPS_FRONT
+     filter: webs_filter
+     state: present
+  delegate_to: localhost
+
+- name: via aci_contract_subject module Contract Subject App
+  aci_contract_subject:
+    tenant: "{{ tenant_name }}"
+    contract: HTTP_APP
+    reverse_filter: no
+    state: present
+    subject: SUBJECT-HTTP_APP
+  delegate_to: localhost
+
+- name: via aci_contract_subject_to_filter module Subject to filters binding for contract HTTP_APP
+  aci_contract_subject_to_filter:
+    tenant: "{{ tenant_name }}"
+    contract: HTTP_APP
+    subject: SUBJECT-HTTP_APP
+    filter: web_filter
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract_subject module Contract Subject Db
+  aci_contract_subject:
+    tenant: "{{ tenant_name }}"
+    contract: MONGODB_DB
+    reverse_filter: no
+    state: present
+    subject: SUBJECT-MONGODB_DB
+  delegate_to: localhost
+
+- name: via aci_contract_subject_to_filter module Subject to filters binding for contract MONGODB_DB
+  aci_contract_subject_to_filter:
+    tenant: "{{ tenant_name }}"
+    contract: MONGODB_DB
+    subject: SUBJECT-MONGODB_DB
+    filter: db_filter
+    state: present
+  delegate_to: localhost
+
+- name: via aci_contract_subject module Contract Subject Icmp
+  aci_contract_subject:
+    tenant: "{{ tenant_name }}"
+    contract: ICMP_VZANY
+    reverse_filter: no
+    state: present
+    subject: SUBJECT-ICMP_VZANY
+  delegate_to: localhost
+
+- name: via aci_contract_subject_to_filter module Subject to filters binding for contract ICMP_VZANY
+  aci_contract_subject_to_filter:
+    tenant: "{{ tenant_name }}"
+    contract: ICMP_VZANY
+    subject: SUBJECT-ICMP_VZANY
+    filter: icmp_filter
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG FRONT consume exported contract for Shared Services ressources
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: FRONT
+    contract: inter-vrf-contract
+    contract_type: consumer
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG APP consume exported contract for Shared Services ressources
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: DB
+    contract: inter-vrf-contract
+    contract_type: consumer
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG DB consume exported contract for Shared Services ressources
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: DB
+    contract: inter-vrf-contract
+    contract_type: consumer
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG FRONT consume HTTP Contract with APP as Provider
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: FRONT
+    contract: HTTP_APP
+    contract_type: consumer
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG APP provide HTTP with EPG FRONT as consumer
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: APP
+    contract: HTTP_APP
+    contract_type: provider
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG APP as a consumer for EPG DB
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: APP
+    contract: MONGODB_DB
+    contract_type: consumer
+    state: present
+  delegate_to: localhost
+
+- name: via aci_epg_to_contract module EPG DB as a provider for EPG APP
+  aci_epg_to_contract:
+    tenant: "{{ tenant_name }}"
+    ap: "{{ appprofile_name }}"
+    epg: DB
+    contract: MONGODB_DB
+    contract_type: provider
+    state: present
+  delegate_to: localhost
+
+- name: via ACI REST-API module Apply ICMP Contract as Provider inside VRF {{ tenant_name}}|{{ vrf_name }}
+  aci_rest:
+    path: /api/node/mo/uni/tn-{{ tenant_name }}/ctx-{{ vrf_name }}/any.json
+    method: post
+    content:
+      {
+        "vzRsAnyToProv": {
+          "attributes": {
+            "tnVzBrCPName": "ICMP_VZANY",
+            "status": "created,modified"
+          },
+        "children": []
+        }
+      }
+  delegate_to: localhost
+
+- name: via ACI REST-API module Apply ICMP Contract as consumer inside VRF {{ tenant_name}}|{{ vrf_name }}
+  aci_rest:
+    path: /api/node/mo/uni/tn-{{ tenant_name }}/ctx-{{ vrf_name }}/any.json
+    method: post
+    content:
+      {
+        "vzRsAnyToCons": {
+          "attributes": {
+            "tnVzBrCPName": "ICMP_VZANY",
+            "status": "created,modified"
+          },
+        "children": []
+        }
+      }
+  delegate_to: localhost

@@ -1,0 +1,5 @@
+---
+# vars file for apic
+tenant_name: Customer02
+appprofile_name: 3TIERS
+vrf_name: VRF02
