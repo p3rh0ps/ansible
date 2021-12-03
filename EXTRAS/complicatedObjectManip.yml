@@ -1,0 +1,41 @@
+---
+  - name: ComplicatedObjectManipulation
+    hosts: localhost
+
+    vars:
+      mychains: [1, 2, 3]
+
+    tasks:
+      - name: Show extracted list of keys from a list of dictionaries
+        ansible.builtin.debug:
+##          msg: "{{ chains | map('extract', chains_config) | map(attribute='configs') | flatten | map(attribute='version.1') | flatten }}"
+          msg: "{{ '_'.join(( 'plaintext', 'id' )) }}"
+        vars:
+          chains: "{{ mychains }}"
+          plaintext: Username
+          id: 666
+          joined: "{{ 'KKKKKKKK'.join(( plaintext, id )) }}"
+          count: "{{ query('sequence', chains_config) }}"
+          chains_config:
+              1:
+                  foo: bar
+                  configs:
+                      - type: routed
+                        version: [0.1, 0.2]
+                      - type: bridged
+                        version: [0.2, 0.3]
+              2:
+                  foo: baz
+                  configs:
+                      - type: routed
+                        version: [1.0, 1.1]
+                      - type: bridged
+                        version: [1.1, 1.2]
+              3:
+                  foo: foobar 
+                  configs:
+                      - type: routed
+                        version: [2.0, 2.1]
+                      - type: bridged
+                        version: [2.1, 2.2]
+        register: joined

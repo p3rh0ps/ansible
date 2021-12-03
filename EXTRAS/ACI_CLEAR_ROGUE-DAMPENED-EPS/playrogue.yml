@@ -1,0 +1,22 @@
+---
+# main playbook
+- hosts: apic
+  gather_facts: no
+  module_defaults:
+    aci_rest:
+      host: 131.226.217.153
+      username: admin
+      password: "{{ aciPass }}"
+      validate_certs: no
+    cisco.aci.aci_fabric_node:
+      host: 131.226.217.153
+      username: admin
+      password: "{{ aciPass }}"
+      validate_certs: no
+    cisco.aci.aci_rest:
+      host: 131.226.217.153
+      username: admin
+      password: "{{ aciPass }}"
+      validate_certs: no
+  roles:
+    - role: rogdamp

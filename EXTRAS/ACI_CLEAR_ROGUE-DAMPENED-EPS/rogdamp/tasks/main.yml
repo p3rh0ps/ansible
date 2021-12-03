@@ -1,0 +1,41 @@
+---
+- name: Display Password to check correct decypher
+  ansible.builtin.debug:
+    msg:
+    - "Check aci password used: {{ aciPass }}"
+
+- name: Query fabric nodes
+  cisco.aci.aci_fabric_node:
+    state: query
+  delegate_to: localhost
+  register: query_result
+
+- name: Display nodeId and podId 
+  ansible.builtin.debug:
+    msg: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') }} {{query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId') }}"
+
+- name: Instantiate data
+  ansible.builtin.set_fact:
+    nodeIdList: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId') | list }}"
+    podIdList: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') | list }}"
+    lof: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') | zip(query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId')) }}"
+
+- name: Display nodeId and podId
+  ansible.builtin.debug:
+    msg:
+    - "Nodes List: {{ nodeIdList }}"
+    - "Pods List: {{ podIdList }}"
+    - "List of list Nodes/Pods: {{ lof }}"
+
+- name: Display nodeId and podId
+  ansible.builtin.debug:
+    msg: "{{ item[0] }}: {{ item[1] }}"
+  loop: "{{ lof }}"
+
+- name: via ACI REST-API module call action on pod/node to clear rogue and dampened endpoints
+  cisco.aci.aci_rest:
+    path: /api/node/mo/topology/pod-{{ item[0] }}/node-{{ item[1] }}/sys/action.json
+    method: post
+    content: "{{ lookup('template', 'rogue.j2') }}"
+  loop: "{{ lof }}"
+  delegate_to: localhost

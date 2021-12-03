@@ -1,0 +1,22 @@
+---
+  - name: ReadJsonfile
+    hosts: localhost
+
+    vars:
+      filecontent: "{{lookup('file', 'data2.json')}}"
+      ipaddr: "192.168.1.1"
+
+    tasks:
+      - name: Display the JSON file content
+        shell: cat data.json
+        register: result
+ 
+      - name:
+        debug:
+          msg: "{{ filecontent }}"
+
+      - name: copy the output to a local file
+        copy:
+          content: "{{ filecontent | to_nice_json }}"
+          dest: "{{ ipaddr }}.info.json"
+        delegate_to: localhost

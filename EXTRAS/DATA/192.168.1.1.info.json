@@ -1,0 +1,60 @@
+{
+    "domain": {
+        "admin": {
+            "listenport": "8001",
+            "servername": "AdminServer"
+        },
+        "clusters": [
+            {
+                "machine": "Box1",
+                "name": "App1Cluster",
+                "refname": "Cluster1"
+            },
+            {
+                "machine": "Box2",
+                "name": "App2Cluster",
+                "refname": "Cluster2"
+            }
+        ],
+        "machines": [
+            {
+                "name": "MWINODE01",
+                "refname": "Machine1"
+            },
+            {
+                "name": "MWINODE02",
+                "refname": "Machine2"
+            }
+        ],
+        "name": "mwidomain",
+        "password": "weblogic1",
+        "prod_mode": "prod",
+        "servers": [
+            {
+                "clusterrefname": "Cluster1",
+                "machine": "Box1",
+                "name": "ms1",
+                "port": 9001
+            },
+            {
+                "clusterrefname": "Cluster2",
+                "machine": "Box2",
+                "name": "ms2",
+                "port": 9002
+            },
+            {
+                "clusterrefname": "Cluster1",
+                "machine": "Box1",
+                "name": "ms3",
+                "port": 9003
+            },
+            {
+                "clusterrefname": "Cluster2",
+                "machine": "Box2",
+                "name": "ms4",
+                "port": 9004
+            }
+        ],
+        "user": "weblogic"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "actionLSubj": {
+        "attributes": {
+            "dn": "topology/pod-{{ item[0] }}/node-{{ item[1] }}/sys/action/lsubj-[topology/pod-{{ item[0] }}/node-{{ item[1] }}]",
+            "oDn": "topology/pod-{{ item[0] }}/node-{{ item[1] }}"
+        },
+        "children": [
+            {
+                "topSystemClearEpLTask": {
+                    "attributes": {
+                        "dn": "topology/pod-{{ item[0] }}/node-{{ item[1] }}/sys/action/lsubj-[topology/pod-{{ item[0] }}/node-{{ item[1] }}]/topSystemClearEpLTask",
+                        "adminSt": "start"
+                    },
+                    "children": []
+                }
+            },
+            {
+                "topSystemClearDampEpLTask": {
+                    "attributes": {
+                        "dn": "topology/pod-{{ item[0] }}/node-{{ item[1] }}/sys/action/lsubj-[topology/pod-{{ item[0] }}/node-{{ item[1] }}]/topSystemClearDampEpLTask",
+                        "adminSt": "start"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}

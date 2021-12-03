@@ -1,0 +1,64 @@
+method: POST
+
+url: https://sandboxapicdc.cisco.com/api/node/mo/topology/pod-{{ pod_id }}/node-{{ node_id }}/sys/action.json
+{
+    "actionLSubj": {
+        "attributes": {
+            "dn": "topology/pod-{{ pod_id }}/node-{{ node_id }}/sys/action/lsubj-[topology/pod-{{ pod_id }}/node-{{ node_id }}]",
+            "oDn": "topology/pod-{{ pod_id }}/node-{{ node_id }}"
+        },
+        "children": [
+            {
+                "topSystemClearEpLTask": {
+                    "attributes": {
+                        "dn": "topology/pod-{{ pod_id }}/node-{{ node_id }}/sys/action/lsubj-[topology/pod-{{ pod_id }}/node-{{ node_id }}]/topSystemClearEpLTask",
+                        "adminSt": "start"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+response: {
+    "totalCount": "0",
+    "imdata": []
+}
+
+
+
+method: POST
+url: https: //sandboxapicdc.cisco.com/api/node/mo/topology/pod-1/node-101/sys/action.json
+payload{
+    "actionLSubj": {
+        "attributes": {
+            "dn": "topology/pod-1/node-101/sys/action/lsubj-[topology/pod-1/node-101]",
+            "oDn": "topology/pod-1/node-101"
+        },
+        "children": [
+            {
+                "topSystemClearDampEpLTask": {
+                    "attributes": {
+                        "dn": "topology/pod-1/node-101/sys/action/lsubj-[topology/pod-1/node-101]/topSystemClearDampEpLTask",
+                        "adminSt": "start"
+                    },
+                    "children": []
+                }
+            }
+        ]
+    }
+}
+response: {
+    "totalCount": "0",
+    "imdata": []
+}
+
+
+
+
+- name: via ACI REST-API module call action on pod/node to clear rogue and dampened endpoints
+  aci_rest:
+    path: /api/node/mo/topology/pod-{{ pod_id }}/node-{{ node_id }}/sys/action.json
+    method: post
+    content: | rogue.j2
+  delegate_to: localhost
