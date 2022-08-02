@@ -18,7 +18,7 @@
   ansible.builtin.set_fact:
     nodeIdList: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId') | list }}"
     podIdList: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') | list }}"
-    lof: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') | zip(query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId')) }}"
+    lof: "{{ query_result.current|json_query('[].fabricNodeIdentP.attributes.podId') | zip(query_result.current|json_query('[].fabricNodeIdentP.attributes.nodeId')) | list }}"
 
 - name: Display nodeId and podId
   ansible.builtin.debug:
