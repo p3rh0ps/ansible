@@ -1,0 +1,11 @@
+---
+security:
+  acls:
+    - name: VTYACL
+      lines:
+        - "10 permit ip 10.0.0.0/8 any"
+        - "100 deny ip any any log"
+    - name: SNMPACL
+      lines:
+        - "10 permit ip 10.0.0.0/8 any"
+        - "100 deny ip any any log"
