@@ -27,8 +27,8 @@ Telegraf v1.24.3
 
 ## Grafana NXOS SNMP/SYSLOG
 
-<a href="url"><img src="https://github.com/p3rh0ps/ansible/blob/master/TELEGRAF/NXOS%20Grafana%20SNMP%20data.png" align="center" height="1000" width="1000" ></a>
+<a href="url"><img src="https://github.com/p3rh0ps/ansible/blob/master/TIG/imgs/NXOS%20Grafana%20SNMP%20data.png" align="center" height="1000" width="1000" ></a>
 
 ## Grafana NXOS TELEMETRY with NX-API/DME/YANG Data
 
-<a href="url"><img src="https://github.com/p3rh0ps/ansible/blob/master/TELEGRAF/Grafana%20NXOS%20Telemetry%20Data.png" align="center" height="1000" width="1000" ></a>
+<a href="url"><img src="https://github.com/p3rh0ps/ansible/blob/master/TIG/imgs/Grafana%20NXOS%20Telemetry%20Data.png" align="center" height="1000" width="1000" ></a>
