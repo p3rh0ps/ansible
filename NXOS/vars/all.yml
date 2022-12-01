@@ -1,0 +1,5 @@
+---
+CUSTOMER: NETWORK_LAB
+ansible_httpapi_port: 443
+ansible_check_mode: False
+ansible_ignore_errors: False
