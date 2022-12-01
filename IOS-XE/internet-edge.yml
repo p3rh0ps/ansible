@@ -1,0 +1,95 @@
+---
+- name: "RESTCONF CONFIGURATION AND MANAGEMENT OF CSR1KV"
+  hosts: internet
+  connection: local
+  gather_facts: no
+  vars_files:
+    - vars/secrets.yml
+
+  tasks:
+
+    - name: Configure hostname
+      uri:
+        url: "{{ resturl }}/data/Cisco-IOS-XE-native:native/hostname"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        method: PUT
+        headers:
+          Content-Type: 'application/yang-data+json'
+          Accept:
+            application/yang-data+json,
+            application/yang-data.errors+json
+        body_format: json
+        body: "{{ hostname_config }}"
+        validate_certs: false
+        status_code:
+         - 200
+         - 204
+
+    - name: Configure vrfs
+      uri:
+        url: "{{ resturl }}/data/Cisco-IOS-XE-native:native/vrf"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        method: PATCH
+        headers:
+          Content-Type: 'application/yang-data+json'
+          Accept:
+            application/yang-data+json,
+            application/yang-data.errors+json
+        body_format: json
+        body: "{{ hostvars[inventory_hostname]['routing']['vrf'] }}"
+        validate_certs: false
+        status_code:
+         - 200
+         - 204
+#     register: vrfs_result
+
+#   - name: Check VRFs results
+#     debug:
+#       msg: "{{ vrfs_result }}"
+
+    - name: Configure interfaces
+      uri:
+        url: "{{ resturl }}/data/openconfig-interfaces:interfaces/interface"
+#       url: "{{ resturl }}/data/Cisco-IOS-XE-native:native/interface"
+#       url: "{{ resturl }}/data/ietf-interfaces:interfaces"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        method: PATCH
+        headers:
+          Content-Type: 'application/yang-data+json'
+          Accept:
+            application/yang-data+json,
+            application/yang-data.errors+json
+        body_format: json
+        body: "{{ interfaces_config }}"
+        validate_certs: false
+        status_code:
+         - 200
+         - 204
+
+    - name: Retrieve interfaces name/status/ipv4 informations
+      uri:
+#       url: "{{ resturl }}/data/openconfig-interfaces:interfaces/interface"
+#       url: "{{ resturl }}/data/Cisco-IOS-XE-native:native/interface"
+        url: "{{ resturl }}/data/ietf-interfaces:interfaces"
+        user: "{{ ansible_user }}"
+        password: "{{ ansible_password }}"
+        method: GET
+        headers:
+          Content-Type: 'application/yang-data+json'
+          Accept:
+            application/yang-data+json,
+            application/yang-data.errors+json
+        validate_certs: false
+        status_code:
+         - 200
+         - 204
+      register: intf_list
+
+    - name: Check retrieved informations
+      debug:
+        #msg: "{{ intf_list.json }}"
+        msg: "{{ intf_list.json | json_query('\"ietf-interfaces:interfaces\".interface[*].[name, \"ietf-ip:ipv4\"]') }}"
+        #msg: "{{ lookup('ansible.utils.to_paths', intf_list) }}"
