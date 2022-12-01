@@ -1,0 +1,7 @@
+---
+ntp:
+  srvs:
+    primary:
+      ipv4: "10.255.255.129"
+      vrf: management
+      source_interface: mgmt0
