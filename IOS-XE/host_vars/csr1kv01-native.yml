@@ -1,0 +1,99 @@
+---
+nos: iosxe
+hostname_config:
+  hostname: csr1kv01
+interfaces_config:
+  Cisco-IOS-XE-native:interface:
+    GigabitEthernet:
+    - Cisco-IOS-XE-ethernet:negotiation:
+        auto: true
+      mop:
+        enabled: false
+        sysid: false
+      name: '1'
+    - description: Internet Link-1 -- BIRD tenant
+      encapsulation:
+        dot1Q:
+          vlan-id: 100
+      ip:
+        address:
+          primary:
+            address: 10.1.1.1
+            mask: 255.255.255.252
+      name: '1.100'
+      vrf:
+        forwarding: BIRD
+    - description: Internet Link-1 -- PIG tenant
+      encapsulation:
+        dot1Q:
+          vlan-id: 200
+      ip:
+        address:
+          primary:
+            address: 10.1.2.1
+            mask: 255.255.255.252
+      name: '1.200'
+      vrf:
+        forwarding: PIG
+    - Cisco-IOS-XE-ethernet:negotiation:
+        auto: true
+      mop:
+        enabled: false
+        sysid: false
+      name: '2'
+      shutdown:
+      -
+    - description: Internet Link-2 -- BIRD tenant
+      encapsulation:
+        dot1Q:
+          vlan-id: 100
+      ip:
+        address:
+          primary:
+            address: 10.2.1.1
+            mask: 255.255.255.252
+      name: '2.100'
+      vrf:
+        forwarding: BIRD
+    - description: Internet Link-2 -- PIG tenant
+      encapsulation:
+        dot1Q:
+          vlan-id: 200
+      ip:
+        address:
+          primary:
+            address: 10.2.2.1
+            mask: 255.255.255.252
+      name: '2.200'
+      vrf:
+        forwarding: PIG
+    - Cisco-IOS-XE-ethernet:negotiation:
+        auto: true
+      mop:
+        enabled: false
+        sysid: false
+      name: '3'
+      shutdown:
+      -
+    - Cisco-IOS-XE-ethernet:negotiation:
+        auto: true
+      description: MANAGEMENT
+      ip:
+        address:
+          primary:
+            address: 10.255.255.200
+            mask: 255.255.255.128
+      mop:
+        enabled: false
+        sysid: false
+      name: '4'
+      vrf:
+        forwarding: MGMT
+    Loopback:
+    - description: LOOPBACK/RID-DFLT
+      ip:
+        address:
+          primary:
+            address: 100.100.100.100
+            mask: 255.255.255.255
+      name: '0'
