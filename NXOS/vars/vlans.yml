@@ -1,0 +1,94 @@
+---
+vlans:
+  - vlan_id: 100
+    vlan_name: VLAN0100
+  - vlan_id: 101
+    vlan_name: VLAN0101
+  - vlan_id: 102
+    vlan_name: VLAN0102
+  - vlan_id: 103
+    vlan_name: VLAN0103
+  - vlan_id: 104
+    vlan_name: VLAN0104
+  - vlan_id: 105
+    vlan_name: VLAN0105
+  - vlan_id: 106
+    vlan_name: VLAN0106
+  - vlan_id: 107
+    vlan_name: VLAN0107
+  - vlan_id: 108
+    vlan_name: VLAN0108
+  - vlan_id: 109
+    vlan_name: VLAN0109
+  - vlan_id: 110
+    vlan_name: VLAN0110
+  - vlan_id: 200
+    vlan_name: VLAN0200
+  - vlan_id: 201
+    vlan_name: VLAN0201
+  - vlan_id: 202
+    vlan_name: VLAN0202
+  - vlan_id: 203
+    vlan_name: VLAN0203
+  - vlan_id: 204
+    vlan_name: VLAN0204
+  - vlan_id: 205
+    vlan_name: VLAN0205
+  - vlan_id: 206
+    vlan_name: VLAN0206
+  - vlan_id: 207
+    vlan_name: VLAN0207
+  - vlan_id: 208
+    vlan_name: VLAN0208
+  - vlan_id: 209
+    vlan_name: VLAN0209
+  - vlan_id: 210
+    vlan_name: VLAN0210
+  - vlan_id: 300
+    vlan_name: VLAN0300
+  - vlan_id: 301
+    vlan_name: VLAN0301
+  - vlan_id: 302
+    vlan_name: VLAN0302
+  - vlan_id: 303
+    vlan_name: VLAN0303
+  - vlan_id: 304
+    vlan_name: VLAN0304
+  - vlan_id: 305
+    vlan_name: VLAN0305
+  - vlan_id: 306
+    vlan_name: VLAN0306
+  - vlan_id: 307
+    vlan_name: VLAN0307
+  - vlan_id: 308
+    vlan_name: VLAN0308
+  - vlan_id: 309
+    vlan_name: VLAN0309
+  - vlan_id: 310
+    vlan_name: VLAN0310
+  - vlan_id: 400
+    vlan_name: VLAN0400
+  - vlan_id: 401
+    vlan_name: VLAN0401
+  - vlan_id: 402
+    vlan_name: VLAN0402
+  - vlan_id: 403
+    vlan_name: VLAN0403
+  - vlan_id: 404
+    vlan_name: VLAN0404
+  - vlan_id: 405
+    vlan_name: VLAN0405
+  - vlan_id: 406
+    vlan_name: VLAN0406
+  - vlan_id: 407
+    vlan_name: VLAN0407
+  - vlan_id: 408
+    vlan_name: VLAN0408
+  - vlan_id: 409
+    vlan_name: VLAN0409
+  - vlan_id: 410
+    vlan_name: VLAN0410
+  - vlan_id: 666
+    vlan_name: NATIVE_UNUSED
+  - vlan_id: 999
+    vlan_name: GARBAGE_COLLECTOR
