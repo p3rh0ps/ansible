@@ -1,0 +1,422 @@
+---
+- hosts: datacenter
+  collections:
+    - cisco.nxos
+  gather_facts: False
+
+  tasks:
+    - name: Set Variables tasks
+      tags: vars
+      block:
+      - name: Include infrastructure variables for Nexus Provisioning
+        ansible.builtin.include_vars:
+          dir: vars
+          ignore_files:
+            - 'all.yml'
+          extensions:
+            - 'yml'
+            - 'yaml'
+          name: infra
+
+      - name: Include Global variables
+        ansible.builtin.include_vars:
+          file: all.yml
+
+    - name: Ensure features are enabled before committing changes
+      nxos_feature:
+        feature: "{{ item }}"
+        state: enabled
+      loop: "{{ infra.features }}"
+      tags: features
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      when: hostvars[inventory_hostname]['nos'] == 'nxos'
+
+    - name: Configure System / hostname and domain-name
+      cisco.nxos.nxos_system:
+        hostname: "{{ inventory_hostname }} "
+        domain_name: "{{ infra.domain_name }}"
+        domain_lookup: "{{ infra.domain_lookup }}"
+      tags: system
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Debug var
+      debug:
+        msg: "{{ infra.snmpv3_secret }}"
+      tags: snmpv3
+
+    - name: Configure SNMPv3 Users
+      cisco.nxos.nxos_config:
+        lines:
+          - "snmp-server user telegraf network-operator auth md5 {{ infra.snmpv3_secret }} priv aes-128 {{ infra.snmpv3_secret }}"
+        before:
+          - "no snmp-server user telegraf"
+        match: line
+        replace: line
+        save_when: always
+      tags: snmpv3
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Activate GuestShell
+      cisco.nxos.nxos_command:
+        commands:
+          - "guestshell enable"
+      tags: guestshell
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Configure SNMPv3 Global
+      cisco.nxos.nxos_snmp_server:
+        config:
+          aaa_user:
+            cache_timeout: 36000
+          communities:
+            - community: "{{ infra.snmpv3_secret }}"
+              group: network-operator
+            - community: "{{ infra.snmpv3_secret }}"
+              group: network-admin
+          contact: "{{ infra.snmp_contact }}"
+          location: "{{ infra.snmp_location }}"
+          traps:
+            aaa:
+              server_state_change: true
+            system:
+              clock_change_notification: true
+          hosts:
+            - host: 10.255.255.129
+              traps: true
+              version: '2c'
+              community: "{{ infra.snmpv3_secret }}"
+          users:
+            use_acls:
+              - user: admin
+                ipv4: "SNMP_ACL"
+              - user: telegraf
+                ipv4: "SNMP_ACL"
+        state: overridden
+      tags: snmpv3
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+
+    - name: Configure users attributes
+      cisco.nxos.nxos_user:
+        name: admin
+        sshkey: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        role: network-admin
+        update_password: on_create
+        state: present
+      tags: users
+
+    - name: Configure banner from set banner variable
+      nxos_banner:
+        banner: motd
+        text: "{{ infra.banner }}"
+        state: present
+      tags: banner
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Configure NTP parameters
+      nxos_ntp_global:
+        config:
+          source_interface: "{{ item.value.source_interface }}"
+          servers:
+            - server: "{{ item.value.ipv4 }}"
+              vrf: "{{ item.value.vrf }}"
+              prefer: "{{ 'yes' if item.value.ipv4[-1] == '9' else 'no' }}"
+      loop: "{{ query('ansible.builtin.dict', infra.ntp.srvs) }}"
+      when: "'primary' in item.key"
+      tags: ntp
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Configure AAA
+      tags: aaa
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      block:
+      - name: Tacacs Server Host Configuration
+        cisco.nxos.nxos_aaa_server_host:
+          state: present
+          server_type: "{{ item.key }}"
+          address: "{{ item.value.host }}"
+          tacacs_port: "{{ item.value.tacacs_port }}"
+          host_timeout: "{{ item.value.host_timeout }}"
+          key: "{{ item.value.key }}"
+          encrypt_type: "{{ item.value.encrypt_type }}"
+        loop: "{{ lookup('ansible.builtin.dict', infra.aaa) }}"
+        when: "'tacacs' in item.key"
+
+      - name: Radius Server Host Configuration
+        cisco.nxos.nxos_aaa_server_host:
+          state: present
+          server_type: "{{ item.key }}"
+          address: "{{ item.value.host }}"
+          auth_port: "{{ item.value.auth_port }}"
+          acct_port: "{{ item.value.acct_port }}"
+          key: "{{ item.value.key }}"
+          encrypt_type: "{{ item.value.encrypt_type }}"
+        loop: "{{ lookup('ansible.builtin.dict', infra.aaa) }}"
+        when: "'radius' in item.key"
+
+    - name: Configure Management ACLs
+      cisco.nxos.nxos_config:
+        lines: "{{ item.1 }}"
+        parents: "ip access-list {{ item.0.name }}"
+        match: line
+        replace: line
+        save_when: never
+        before: "no ip access-list {{ item.0.name }}"
+      with_subelements:
+        - "{{ infra.security.acls }}"
+        - lines
+      tags: acls
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Activate DHCP services
+      cisco.nxos.nxos_config:
+        lines:
+          - "service dhcp"
+          - "ip dhcp relay"
+        match: line
+        replace: line
+        save_when: modified
+      tags: dhcp
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Configure VLANs with description and name
+      nxos_vlans:
+        config:
+        - vlan_id: "{{ item['vlan_id'] }}"
+          name: "{{ item['vlan_name'] }}"
+        state: merged
+      loop: "{{ infra.vlans }}"
+      tags: vlans
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Interfaces Properties
+      tags: interfaces
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      block:
+        - name: Set Ethernet Interface properties
+          cisco.nxos.nxos_interfaces:
+            config:
+              - name: "{{ item.name }}"
+                mode: "{{ item.mode }}"
+                description: "{{ item.description }}"
+                mtu: "{{ item.mtu | default(hostvars[inventory_hostname]['interfaces']['mtu']) }}"
+                speed: "{{ item.speed | default(omit) }}"
+                duplex: "{{ item.duplex | default('auto') }}"
+                enabled: "{{ item.enabled }}"
+            state: merged
+          loop: "{{ hostvars[inventory_hostname]['interfaces']['Ethernet'] }}"
+
+        - name: Set L2 properties for Trunk
+          cisco.nxos.nxos_l2_interfaces:
+            config:
+            - name: "{{ item.name }}"
+              trunk:
+                native_vlan: "{{ item.native_vlan }}"
+                allowed_vlans: "{{ item.allowed_vlans }}"
+            state: merged
+          loop: "{{ hostvars[inventory_hostname]['interfaces']['Ethernet'] }}"
+          when: item.mode == 'layer2' and item.submode == 'trunk'
+
+        - name: Set L2 properties for Access
+          cisco.nxos.nxos_l2_interfaces:
+            config:
+            - name: "{{ item.name }}"
+              access:
+                vlan: 30
+            state: merged
+          loop: "{{ hostvars[inventory_hostname]['interfaces']['Ethernet'] }}"
+          when: item.mode == 'layer2' and item.submode == 'access'
+
+    - name: vPC Configuration
+      cisco.nxos.nxos_vpc:
+        domain: "{{ hostvars[inventory_hostname]['vpc']['domain'] }}"
+        role_priority: "{{ hostvars[inventory_hostname]['vpc']['role_priority'] }}"
+        system_priority: "{{ hostvars[inventory_hostname]['vpc']['system_priority'] }}"
+        pkl_dest: "{{ hostvars[inventory_hostname]['vpc']['pkl_dest'] }}"
+        pkl_src: "{{ hostvars[inventory_hostname]['vpc']['pkl_src'] }}"
+        pkl_vrf: "{{ hostvars[inventory_hostname]['vpc']['pkl_vrf'] }}"
+        peer_gw: "{{ hostvars[inventory_hostname]['vpc']['peer_gw'] }}"
+        auto_recovery: "{{ hostvars[inventory_hostname]['vpc']['auto_recovery'] }}"
+        state: present
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      tags: vpc
+
+    - name: Configure L3 SVIs and Routing
+      tags: routing
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      block:
+      - name: Create TENANTS/VRFS
+        nxos_vrf:
+          name: "{{ item }}"
+          state: present
+        loop: "{{ infra.routing.vrfs }}"
+        when: item != 'default' and item != 'management'
+
+      - name: Create all static routes
+        nxos_static_routes:
+          config:
+          - vrf: "{{ item.0.vrf }}"
+            address_families:
+            - afi: ipv4
+              routes:
+              - dest: "{{ item.1 }}"
+                next_hops:
+                - forward_router_address: "{{ item.0.gw }}"
+          state: merged
+        with_subelements:
+          - "{{ infra.routing.routes }}"
+          - prefixes
+
+    - name: Configure Logging Parameters
+      cisco.nxos.nxos_logging_global:
+        config:
+          source_interface: "{{ infra.logging.source_interface }}"
+          event:
+            link_status:
+              default: "{{ infra.logging.event.link_status.default }}"
+              enable: "{{ infra.logging.event.link_status.enable }}"
+            trunk_status:
+              default: "{{ infra.logging.event.trunk_status.default }}"
+              enable: "{{ infra.logging.event.trunk_status.enable }}"
+          hosts:
+            - host: "{{ item.ipv4 }}"
+              use_vrf: "{{ item.vrf }}"
+              severity: "{{ item.severity }}"
+          origin_id:
+            hostname: true
+        state: replaced
+      loop: "{{ infra.logging.srvs }}"
+      tags: logging
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+
+    - name: Telemetry Configuration
+      tags: telemetry
+      check_mode: "{{ ansible_check_mode }}"
+      ignore_errors: "{{ ansible_ignore_errors }}"
+      block:
+
+      - name: Clean all Telemetry Configuration
+        cisco.nxos.nxos_telemetry:
+          state: deleted
+
+      - name: Merge Telemetry Configuration
+        cisco.nxos.nxos_telemetry:
+          config:
+            compression: gzip
+            vrf: management
+            destination_groups:
+            - id: 1
+              destination:
+                ip: 10.255.255.129
+                port: 57000
+                protocol: gRPC
+                encoding: GPB
+            sensor_groups:
+            - id: 10
+              data_source: NX-API
+              path:
+                name: '"show interface counters detailed"'
+                depth: 0
+            - id: 13
+              data_source: NX-API
+              path:
+                name: '"show interface transceiver detail"'
+            - id: 20
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/lldp-items"'
+            - id: 21
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/mac-items"'
+            - id: 22
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/mac-items/static-items"'
+            - id: 23
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/intf-items"'
+            - id: 24
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/procsys-items/sysload-items"'
+            - id: 25
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/ch-items"'
+            - id: 26
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/bd-items"'
+            - id: 27
+              data_source: YANG
+              path:
+                name: '"Cisco-NX-OS-device:System/eps-items"'
+            subscriptions:
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 10
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 13
+                sample_interval: 10000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 20
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 21
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 22
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 23
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 24
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 25
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 26
+                sample_interval: 1000
+            - id: 1
+              destination_group: 1
+              sensor_group:
+                id: 27
+                sample_interval: 1000
+          state: merged
