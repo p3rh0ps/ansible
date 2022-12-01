@@ -1,0 +1,18 @@
+---
+aaa:
+  tacacs:
+    host: "10.1.1.1"
+    tacacs_port: 49
+    host_timeout: default
+    encrypt_type: 7
+    key: "unknown"
+  radius:
+    host: "10.2.2.2"
+    auth_port: default
+    acct_port: default
+    host_timeout: default
+    encrypt_type: 7
+    key: "unknown"
+    personas:
+      - authentication
+      - accounting
