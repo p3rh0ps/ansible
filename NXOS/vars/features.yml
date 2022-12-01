@@ -1,0 +1,15 @@
+---
+features:
+  - udld
+  - lldp
+  - lacp
+  - vpc
+  - interface-vlan
+  - dhcp
+  - hsrp
+  - tacacs+
+  - sftpServer
+  - telemetry
+  - sflow
+  - nxapi
+  - bash-shell
