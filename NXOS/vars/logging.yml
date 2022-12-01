@@ -1,0 +1,14 @@
+---
+logging:
+  source_interface: mgmt0
+  event:
+    link_status:
+      default: yes
+      enable: yes
+    trunk_status:
+      default: yes
+      enable: yes
+  srvs:
+    - ipv4: 10.255.255.129
+      vrf: management
+      severity: informational
