@@ -1,0 +1,220 @@
+---
+nos: iosxe
+hostname_config:
+  hostname: csr1kv01
+routing:
+  vrf: |
+    {
+      "vrf": {
+        "definition": [
+          {
+            "name": "BIRD",
+            "address-family": {
+              "ipv4": {
+                "maximum": {
+                  "routes": "10000",
+                  "warning-only": ""
+                }
+              },
+              "ipv6": ""
+            }
+          },
+          {
+            "name": "MGMT",
+            "address-family": {
+              "ipv4": {
+                "maximum": {
+                  "routes": "10000",
+                  "warning-only": ""
+                }
+              },
+              "ipv6": ""
+            }
+          },
+          {
+            "name": "PIG",
+            "address-family": {
+              "ipv4": {
+                "maximum": {
+                  "routes": "10000",
+                  "warning-only": ""
+                }
+              },
+              "ipv6": ""
+            }
+          }
+        ]
+      }
+    }
+
+interfaces_config:
+  openconfig-interfaces:interface:
+  - config:
+      enabled: true
+      name: GigabitEthernet1
+      type: iana-if-type:ethernetCsmacd
+    name: GigabitEthernet1
+    openconfig-if-ethernet:ethernet:
+      config:
+        auto-negotiate: true
+        enable-flow-control: true
+        mac-address: 50:02:00:0a:00:00
+    subinterfaces:
+      subinterface:
+      - config:
+          enabled: true
+          index: 0
+        index: 0
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+      - config:
+          description: Internet Link-1 -- BIRD tenant
+          enabled: true
+          index: 100
+        index: 100
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 10.1.1.1
+                prefix-length: 30
+              ip: 10.1.1.1
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+      - config:
+          description: Internet Link-1 -- PIG tenant
+          enabled: true
+          index: 200
+        index: 200
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 10.1.2.1
+                prefix-length: 30
+              ip: 10.1.2.1
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+  - config:
+      enabled: false
+      name: GigabitEthernet2
+      type: iana-if-type:ethernetCsmacd
+    name: GigabitEthernet2
+    openconfig-if-ethernet:ethernet:
+      config:
+        auto-negotiate: true
+        enable-flow-control: true
+        mac-address: 50:02:00:0a:00:01
+    subinterfaces:
+      subinterface:
+      - config:
+          enabled: false
+          index: 0
+        index: 0
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+      - config:
+          description: Internet Link-2 -- BIRD tenant
+          enabled: true
+          index: 100
+        index: 100
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 10.2.1.1
+                prefix-length: 30
+              ip: 10.2.1.1
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+      - config:
+          description: Internet Link-2 -- PIG tenant
+          enabled: true
+          index: 200
+        index: 200
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 10.2.2.1
+                prefix-length: 30
+              ip: 10.2.2.1
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+  - config:
+      enabled: false
+      name: GigabitEthernet3
+      type: iana-if-type:ethernetCsmacd
+    name: GigabitEthernet3
+    openconfig-if-ethernet:ethernet:
+      config:
+        auto-negotiate: true
+        enable-flow-control: true
+        mac-address: 50:02:00:0a:00:02
+    subinterfaces:
+      subinterface:
+      - config:
+          enabled: false
+          index: 0
+        index: 0
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+  - config:
+      description: MANAGEMENT
+      enabled: true
+      name: GigabitEthernet4
+      type: iana-if-type:ethernetCsmacd
+    name: GigabitEthernet4
+    openconfig-if-ethernet:ethernet:
+      config:
+        auto-negotiate: true
+        enable-flow-control: true
+        mac-address: 50:02:00:0a:00:03
+        port-speed: openconfig-if-ethernet:SPEED_1GB
+    subinterfaces:
+      subinterface:
+      - config:
+          description: MANAGEMENT
+          enabled: true
+          index: 0
+        index: 0
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 10.255.255.200
+                prefix-length: 25
+              ip: 10.255.255.200
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
+  - config:
+      description: LOOPBACK/RID-DFLT
+      enabled: true
+      name: Loopback0
+      type: iana-if-type:softwareLoopback
+    name: Loopback0
+    subinterfaces:
+      subinterface:
+      - config:
+          description: LOOPBACK/RID-DFLT
+          enabled: true
+          index: 0
+        index: 0
+        openconfig-if-ip:ipv4:
+          addresses:
+            address:
+            - config:
+                ip: 100.100.100.100
+                prefix-length: 32
+              ip: 100.100.100.100
+        openconfig-if-ip:ipv6:
+          config:
+            enabled: false
