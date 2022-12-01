@@ -1,0 +1,104 @@
+---
+nos: nxos
+interfaces:
+  mtu: 9216
+  Ethernet:
+    - name: Ethernet1/1
+      description: "vPC PeerKeepAlive"
+      speed: 1000
+      cdp: True
+      vrf: MGMT
+      ipv4: 192.168.254.254/30
+      mode: layer3
+      submode: null
+      enabled: true
+    - name: Ethernet1/2
+      description: "Uplink to CORE -- vPC Port-Channel"
+      cdp: True
+      allowed_vlans: "2-1024"
+      native_vlan: "666"
+      mode: layer2
+      submode: trunk
+      enabled: true
+    - name: Ethernet1/3
+      description: "Uplink to CORE -- vPC Port-Channel"
+      cdp: True
+      allowed_vlans: "2-1024"
+      native_vlan: "666"
+      mode: layer2
+      submode: trunk
+      enabled: true
+    - name: Ethernet1/6
+      description: "VPC Peer Link"
+      cdp: True
+      allowed_vlans: "2-1024"
+      native_vlan:
+      mode: layer2
+      submode: "peer-link"
+      enabled: true
+    - name: Ethernet1/7
+      description: "vPC Peer Link"
+      cdp: True
+      allowed_vlans: "2-1024"
+      native_vlan:
+      mode: layer2
+      submode: "peer-link"
+      enabled: true
+    - name: Ethernet1/8
+      description: "ACCESS DEMO"
+      cdp: true
+      allowed_vlans: "999"
+      native_vlan: "default"
+      mode: layer2
+      submode: access
+      enabled: true
+    - name: Ethernet1/12
+      description: "TRUNK DEMO with standard Port-channel"
+      cdp: true
+      allowed_vlans: "100-110,200-210,300-310,666"
+      native_vlan: "666"
+      mode: layer2
+      submode: trunk
+      enabled: true
+    - name: Ethernet1/13
+      description: "TRUNK DEMO with standard Port-channel"
+      cdp: true
+      allowed_vlans: "200-210,666"
+      native_vlan: "666"
+      mode: layer2
+      submode: trunk
+      enabled: true
+    - name: Ethernet1/24
+      description: "TRUNK DEMO with vPC Port-Channel"
+      cdp: True
+      allowed_vlans: "300-310,666"
+      native_vlan: "666"
+      mode: layer2
+      submode: trunk
+      enabled: true
+  PortChannel:
+    - name: 10
+      description: "VPC Port-Channel Peer Link"
+      member:
+        - "Ethernet1/6"
+        - "Ethernet1/7"
+    - name: 20
+      description: "STANDARD PORT-CHANNEL TRUNK DEMO ETH1/9 ETH1/10"
+      member:
+        - "Ethernet1/12"
+        - "Ethernet1/13"
+    - name: 30
+      description: "vPC PORT-CHANNEL TRUNK DEMO WITH ETH1/24 N9KV03 and N9KV04"
+      member:
+        - "Ethernet1/24"
+vpc:
+  domain: 20
+  auto_recovery: yes
+  pkl_dest: "10.255.255.144"
+  pkl_src: "10.255.255.145"
+  pkl_vrf: management
+  role_priority: 2000
+  system_priority: 32768
+  peer_gw: yes
+  peer_sw: yes
+  port_channel: 10
