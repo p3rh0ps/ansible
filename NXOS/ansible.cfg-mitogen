@@ -1,0 +1,18 @@
+[defaults]
+host_key_checking = false
+ansible_ssh_pipelining = yes
+callbacks_enabled = ansible.posix.timer, ansible.posix.profile_tasks
+forks = 4
+
+[ssh_connection]
+ssh_args = -o ControlMaster=auto -o ControlPersist=18000 -o PreferredAuthentications=password,publickey -o PubkeyAcceptedKeyTypes=+ssh-rsa
+pipelining = true
+
+[persistent_connection]
+ssh_type = libssh
+(vpy3) /playbooks # more ansible.cfg-mitogen
+[defaults]
+host_key_checking = false
+callbacks_enabled = ansible.posix.timer, ansible.posix.profile_tasks
+strategy_plugins = /mitogen/ansible_mitogen/plugins/strategy
+strategy = mitogen_linear
