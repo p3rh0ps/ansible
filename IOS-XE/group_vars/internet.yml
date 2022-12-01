@@ -1,0 +1,36 @@
+---
+ansible_user: "admin"
+ansible_network_os: ansible.netcommon.restconf
+ansible_connection: ansible.netcommon.httpapi
+ansible_httpapi_use_ssl: yes
+ansible_httpapi_validate_certs: no
+ansible_httpapi_pass: admin
+ansible_httpapi_port: 443
+resturl: "https://{{ ansible_host }}:{{ restconf_port }}/restconf"
+
+syslog_configure:
+  logging:
+    host:
+      ipv4-host-list:
+       - ipv4-host: 10.10.10.10
+
+snmp_configure:
+  snmp-server:
+    Cisco-IOS-XE-snmp:chassis-id: CSR1KV
+    Cisco-IOS-XE-snmp:community:
+    - name: SNMPCOMMUNITY
+    Cisco-IOS-XE-snmp:contact: p3rh0ps@gmail.com
+    Cisco-IOS-XE-snmp:enable:
+      enable-choice:
+        traps: {}
+    Cisco-IOS-XE-snmp:host:
+    - ip-address: 10.10.10.10
+      community-or-user: CRAPY
+      version: 2c
+
+ntp_configure:
+  ntp:
+    Cisco-IOS-XE-ntp:server:
+      server-list:
+      - ip-address: 10.10.10.10
+        prefer: true
